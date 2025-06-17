@@ -20,7 +20,7 @@ pipeline {
             }
         }
 
-        stage('Docker Build & Push') {
+        stage('Build & Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     script {
@@ -36,14 +36,14 @@ pipeline {
             }
         }
 
-        stage('Deploy to EKS') {
+        stage('Deploy to EKS via kubectl') {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                     script {
-                        def yamlFile = "k8s/deployment-${env.DEPLOY_COLOR}.yaml"
+                        def yaml = "k8s/deployment-${env.DEPLOY_COLOR}.yaml"
                         sh """
-                            sed -i "s|<your-dockerhub-username>/rajini-app:<tag>|${env.FULL_IMAGE}|" ${yamlFile}
-                            kubectl apply -f ${yamlFile}
+                            sed -i "s|<your-dockerhub-username>/rajini-app:<tag>|${env.FULL_IMAGE}|" ${yaml}
+                            kubectl apply -f ${yaml}
                             kubectl apply -f k8s/service.yaml
                             kubectl apply -f k8s/hpa.yaml
                         """
@@ -54,4 +54,3 @@ pipeline {
     }
 }
 
-// trigger build
