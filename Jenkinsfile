@@ -36,16 +36,16 @@ pipeline {
             }
         }
 
-        stage('Deploy to EKS via kubectl') {
+        stage('Deploy to EKS') {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                     script {
                         def yaml = "k8s/deployment-${env.DEPLOY_COLOR}.yaml"
                         sh """
                             sed -i "s|<your-dockerhub-username>/rajini-app:<tag>|${env.FULL_IMAGE}|" ${yaml}
-                            kubectl apply -f ${yaml}
-                            kubectl apply -f k8s/service.yaml
-                            kubectl apply -f k8s/hpa.yaml
+                            kubectl apply -f ${yaml} --validate=false
+                            kubectl apply -f k8s/service.yaml --validate=false
+                            kubectl apply -f k8s/hpa.yaml --validate=false
                         """
                     }
                 }
