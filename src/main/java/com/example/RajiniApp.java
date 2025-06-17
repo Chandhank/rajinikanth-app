@@ -1,47 +1,43 @@
 package com.example;
 
-import java.io.*;
+import java.io.IOException;
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpExchange;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import com.sun.net.httpserver.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class RajiniApp {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
 
-        // Serve HTML
-        server.createContext("/", exchange -> {
-            String html = """
-                <html>
-                  <head><title>Rajinikanth</title></head>
-                  <body style='text-align:center; font-family:sans-serif;'>
-                    <h1>போடா அண்டவனே நம்ம பக்கம் இருக்கான்</h1>
-                    <img src='/rajini.jpg' width='400'/>
-                  </body>
-                </html>
-            """;
-            exchange.sendResponseHeaders(200, html.getBytes().length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(html.getBytes());
-            os.close();
-        });
+        server.createContext("/", new FileHandler("static/index.html", "text/html"));
+        server.createContext("/rajini.jpg", new FileHandler("static/rajini.jpg", "image/jpeg"));
 
-        // Serve image
-        server.createContext("/rajini.jpg", exchange -> {
-            File file = new File("static/rajini.jpg");
-            byte[] bytes = new byte[(int) file.length()];
-            FileInputStream fis = new FileInputStream(file);
-            fis.read(bytes);
-            fis.close();
-
-            exchange.getResponseHeaders().add("Content-Type", "image/jpeg");
-            exchange.sendResponseHeaders(200, bytes.length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(bytes);
-            os.close();
-        });
-
+        server.setExecutor(null);
         server.start();
-        System.out.println("Server started on port 8080");
+        System.out.println("Rajini App running at http://localhost:8080/");
+    }
+
+    static class FileHandler implements HttpHandler {
+        private final String filePath;
+        private final String contentType;
+
+        public FileHandler(String filePath, String contentType) {
+            this.filePath = filePath;
+            this.contentType = contentType;
+        }
+
+        public void handle(HttpExchange exchange) throws IOException {
+            byte[] response = Files.readAllBytes(Paths.get(filePath));
+            exchange.getResponseHeaders().set("Content-Type", contentType);
+            exchange.sendResponseHeaders(200, response.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response);
+            }
+        }
     }
 }
 
