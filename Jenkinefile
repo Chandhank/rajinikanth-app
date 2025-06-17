@@ -5,6 +5,8 @@ pipeline {
         IMAGE_NAME = "rajini-app"
         IMAGE_TAG = "${BUILD_NUMBER}"
         DEPLOY_COLOR = "${BUILD_NUMBER.toInteger() % 2 == 0 ? 'blue' : 'green'}"
+        AWS_REGION = "us-east-1"
+        CLUSTER_NAME = "rajini-cluster"
     }
 
     stages {
@@ -14,7 +16,7 @@ pipeline {
             }
         }
 
-        stage('Build and Test Java App') {
+        stage('Build & Test Java App') {
             steps {
                 sh 'mvn clean package'
             }
@@ -32,6 +34,18 @@ pipeline {
                         """
                         env.FULL_IMAGE = fullImage
                     }
+                }
+            }
+        }
+
+        stage('Configure AWS Credentials') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh '''
+                        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                        aws configure set default.region us-east-1
+                    '''
                 }
             }
         }
